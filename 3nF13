@@ -1,0 +1,347 @@
+-- =========================================== --
+-- Script: TimeBomb Advanced V5
+-- Developer: 3nF
+-- Executor: Delta | Keyless
+-- Telegram: xxx9ooo
+-- =========================================== --
+
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+local mainFrame = Instance.new("Frame")
+local title = Instance.new("TextLabel")
+local closeBtn = Instance.new("TextButton")
+local minimizeBtn = Instance.new("TextButton")
+local dragArea = Instance.new("Frame")
+local credit = Instance.new("TextLabel")
+local telegram = Instance.new("TextLabel")
+local btns = {}
+
+-- =========================================== --
+-- إعداد الواجهة الرئيسية (مربعة الشكل)
+-- =========================================== --
+gui.Name = "3nF_TimeBomb"
+gui.Parent = player.PlayerGui
+gui.ResetOnSpawn = false
+
+mainFrame.Size = UDim2.new(0, 350, 0, 480)
+mainFrame.Position = UDim2.new(0.5, -175, 0.5, -240)
+mainFrame.BackgroundColor3 = Color3.fromRGB(12, 12, 35)
+mainFrame.BackgroundTransparency = 0.08
+mainFrame.BorderSizePixel = 3
+mainFrame.BorderColor3 = Color3.fromRGB(255, 180, 50)
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = gui
+
+-- منطقة السحب
+dragArea = Instance.new("Frame")
+dragArea.Size = UDim2.new(1, 0, 0, 45)
+dragArea.Position = UDim2.new(0, 0, 0, 0)
+dragArea.BackgroundColor3 = Color3.fromRGB(25, 25, 55)
+dragArea.BorderSizePixel = 0
+dragArea.Parent = mainFrame
+
+-- عنوان السكربت (خط احترافي)
+title.Size = UDim2.new(1, -80, 0, 45)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "⚡ TimeBomb V5"
+title.TextColor3 = Color3.fromRGB(255, 200, 50)
+title.TextScaled = true
+title.Font = Enum.Font.SourceSansBold
+title.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+title.TextStrokeTransparency = 0.3
+title.TextXAlignment = Enum.TextXAlignment.Center
+title.Parent = dragArea
+
+-- اسمك تحت العنوان
+local subTitle = Instance.new("TextLabel")
+subTitle.Size = UDim2.new(1, -80, 0, 18)
+subTitle.Position = UDim2.new(0, 0, 0, 25)
+subTitle.BackgroundTransparency = 1
+subTitle.Text = "by 3nF"
+subTitle.TextColor3 = Color3.fromRGB(200, 170, 100)
+subTitle.TextScaled = true
+subTitle.Font = Enum.Font.SourceSansLight
+subTitle.TextXAlignment = Enum.TextXAlignment.Center
+subTitle.Parent = dragArea
+
+-- زر الإغلاق
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -38, 0, 8)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+closeBtn.BorderSizePixel = 0
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.SourceSansBold
+closeBtn.Parent = dragArea
+
+-- زر التصغير
+minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+minimizeBtn.Position = UDim2.new(1, -72, 0, 8)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 90)
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.Text = "─"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextScaled = true
+minimizeBtn.Font = Enum.Font.SourceSansBold
+minimizeBtn.Parent = dragArea
+
+-- =========================================== --
+-- تحريك القائمة
+-- =========================================== --
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+dragArea.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+
+dragArea.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- =========================================== --
+-- وظائف الإخفاء والتصغير
+-- =========================================== --
+local uiVisible = true
+closeBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    mainFrame.Visible = uiVisible
+end)
+
+local isMinimized = false
+local savedSize = mainFrame.Size
+local savedPos = mainFrame.Position
+
+minimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        mainFrame.Size = UDim2.new(0, 200, 0, 45)
+        minimizeBtn.Text = "□"
+        for _, child in pairs(mainFrame:GetChildren()) do
+            if child ~= dragArea and child ~= title and child ~= subTitle and child ~= closeBtn and child ~= minimizeBtn then
+                child.Visible = false
+            end
+        end
+        title.Text = "⚡ TimeBomb V5 | 3nF"
+        title.TextScaled = true
+    else
+        mainFrame.Size = savedSize
+        minimizeBtn.Text = "─"
+        title.Text = "⚡ TimeBomb V5"
+        for _, child in pairs(mainFrame:GetChildren()) do
+            if child ~= dragArea and child ~= title and child ~= subTitle and child ~= closeBtn and child ~= minimizeBtn then
+                child.Visible = true
+            end
+        end
+    end
+end)
+
+-- اختصار F5
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.F5 then
+        uiVisible = not uiVisible
+        mainFrame.Visible = uiVisible
+    end
+end)
+
+-- =========================================== --
+-- دالة إنشاء أزرار التبديل (Toggle)
+-- =========================================== --
+local function createToggle(text, yPos, color, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.9, 0, 0, 34)
+    frame.Position = UDim2.new(0.05, 0, yPos, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 45)
+    frame.BorderSizePixel = 1
+    frame.BorderColor3 = Color3.fromRGB(60, 60, 100)
+    frame.Parent = mainFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.6, 0, 1, 0)
+    label.Position = UDim2.new(0, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(230, 230, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.SourceSansSemibold
+    label.Parent = frame
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 60, 0.8, 0)
+    btn.Position = UDim2.new(0.7, 0, 0.1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+    btn.BorderSizePixel = 2
+    btn.BorderColor3 = color or Color3.fromRGB(255, 180, 50)
+    btn.Text = "OFF"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.SourceSansBold
+    btn.Parent = frame
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = state and "ON" or "OFF"
+        btn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(50, 50, 80)
+        if callback then callback(state) end
+    end)
+
+    return btn, frame
+end
+
+-- =========================================== --
+-- الأزرار مع المميزات
+-- =========================================== --
+local y = 0.13
+
+local autoPassBtn, autoPassFrame = createToggle("⚡ Auto Pass", y, Color3.fromRGB(255, 180, 50), function(state)
+    print("Auto Pass: " .. tostring(state))
+end)
+y = y + 0.085
+
+local speedBtn, speedFrame = createToggle("🏃 Speed Boost", y, Color3.fromRGB(255, 180, 50), function(state)
+    print("Speed: " .. tostring(state))
+end)
+y = y + 0.085
+
+local reachBtn, reachFrame = createToggle("🖐️ Reach", y, Color3.fromRGB(200, 100, 255), function(state)
+    print("Reach: " .. tostring(state))
+end)
+y = y + 0.085
+
+local silentAimBtn, silentAimFrame = createToggle("🔫 Silent Aim", y, Color3.fromRGB(255, 80, 80), function(state)
+    print("Silent Aim: " .. tostring(state))
+end)
+y = y + 0.085
+
+local autoWinBtn, autoWinFrame = createToggle("🔄 Auto Win", y, Color3.fromRGB(80, 200, 80), function(state)
+    print("Auto Win: " .. tostring(state))
+end)
+y = y + 0.085
+
+local aimbotBtn, aimbotFrame = createToggle("🎯 Aimbot", y, Color3.fromRGB(255, 150, 50), function(state)
+    print("Aimbot: " .. tostring(state))
+end)
+y = y + 0.085
+
+local antiAFKBtn, antiAFKFrame = createToggle("🔔 Anti-AFK", y, Color3.fromRGB(50, 200, 255), function(state)
+    print("Anti-AFK: " .. tostring(state))
+end)
+y = y + 0.085
+
+local godModeBtn, godModeFrame = createToggle("🛡️ God Mode", y, Color3.fromRGB(50, 255, 150), function(state)
+    print("God Mode: " .. tostring(state))
+end)
+y = y + 0.085
+
+local espBtn, espFrame = createToggle("👁️ ESP", y, Color3.fromRGB(255, 100, 200), function(state)
+    print("ESP: " .. tostring(state))
+end)
+y = y + 0.085
+
+local antiCrashBtn, antiCrashFrame = createToggle("🔒 Anti-Crash", y, Color3.fromRGB(255, 80, 120), function(state)
+    print("Anti-Crash: " .. tostring(state))
+end)
+y = y + 0.085
+
+local explosionBtn, explosionFrame = createToggle("💥 Explosion", y, Color3.fromRGB(255, 150, 50), function(state)
+    print("Explosion: " .. tostring(state))
+end)
+y = y + 0.085
+
+-- =========================================== --
+-- زر إيقاف الكل (Stop All)
+-- =========================================== --
+local stopBtn = Instance.new("TextButton")
+stopBtn.Size = UDim2.new(0.4, 0, 0, 32)
+stopBtn.Position = UDim2.new(0.3, 0, 0.96, 0)
+stopBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+stopBtn.BorderSizePixel = 2
+stopBtn.BorderColor3 = Color3.fromRGB(255, 80, 80)
+stopBtn.Text = "🛑 STOP ALL"
+stopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+stopBtn.TextScaled = true
+stopBtn.Font = Enum.Font.SourceSansBold
+stopBtn.Parent = mainFrame
+
+stopBtn.MouseButton1Click:Connect(function()
+    -- إيقاف كل المميزات
+    for _, child in pairs(mainFrame:GetChildren()) do
+        if child:IsA("Frame") and child:FindFirstChild("TextButton") then
+            local btn = child:FindFirstChild("TextButton")
+            if btn and btn.Text == "ON" then
+                btn.Text = "OFF"
+                btn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+            end
+        end
+    end
+    -- إعادة السرعة
+    local char = player.Character
+    if char then
+        local humanoid = char:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 16
+            humanoid.MaxHealth = 100
+            humanoid.Health = 100
+        end
+    end
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "3nF Hub",
+        Text = "🛑 All features stopped!",
+        Duration = 2
+    })
+end)
+
+-- =========================================== --
+-- اسم الصانع
+-- =========================================== --
+credit.Size = UDim2.new(1, 0, 0, 16)
+credit.Position = UDim2.new(0, 0, 1.03, 0)
+credit.BackgroundTransparency = 1
+credit.Text = "⭐ Script by 3nF ⭐"
+credit.TextColor3 = Color3.fromRGB(255, 180, 50)
+credit.TextScaled = true
+credit.Font = Enum.Font.SourceSansLight
+credit.Parent = mainFrame
+
+-- سطر التليجرام
+telegram.Size = UDim2.new(1, 0, 0, 16)
+telegram.Position = UDim2.new(0, 0, 1.07, 0)
+telegram.BackgroundTransparency = 1
+telegram.Text = "📱 Telegram: xxx9ooo"
+telegram.TextColor3 = Color3.fromRGB(120, 200, 255)
+telegram.TextScaled = true
+telegram.Font = Enum.Font.SourceSansLight
+telegram.Parent = mainFrame
+
+-- =========================================== --
+-- إشعار التشغيل
+-- =========================================== --
+print("✅ TimeBomb V5 Loaded! | Script by 3nF")
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "⚡ 3nF TimeBomb",
+    Text = "TimeBomb V5 Loaded! | F5 to hide | Drag to move",
+    Duration = 4
+})

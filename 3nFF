@@ -1,0 +1,545 @@
+-- =========================================== --
+-- Script: TimeBomb Advanced V5
+-- Developer: 3nF
+-- Executor: Delta | Keyless
+-- Telegram: xxx9ooo
+-- =========================================== --
+
+local player = game.Players.LocalPlayer
+local gui = Instance.new("ScreenGui")
+local mainFrame = Instance.new("Frame")
+local title = Instance.new("TextLabel")
+local closeBtn = Instance.new("TextButton")
+local minimizeBtn = Instance.new("TextButton")
+local dragArea = Instance.new("Frame")
+local credit = Instance.new("TextLabel")
+local telegram = Instance.new("TextLabel")
+
+-- =========================================== --
+-- إعداد الواجهة الرئيسية (شكل الصورة)
+-- =========================================== --
+gui.Name = "3nF_TimeBomb"
+gui.Parent = player.PlayerGui
+gui.ResetOnSpawn = false
+
+mainFrame.Size = UDim2.new(0, 380, 0, 520)
+mainFrame.Position = UDim2.new(0.5, -190, 0.5, -260)
+mainFrame.BackgroundColor3 = Color3.fromRGB(13, 13, 30)
+mainFrame.BackgroundTransparency = 0.05
+mainFrame.BorderSizePixel = 2
+mainFrame.BorderColor3 = Color3.fromRGB(255, 170, 50)
+mainFrame.ClipsDescendants = true
+mainFrame.Parent = gui
+
+-- منطقة السحب (شريط العنوان مثل الصورة)
+dragArea = Instance.new("Frame")
+dragArea.Size = UDim2.new(1, 0, 0, 45)
+dragArea.Position = UDim2.new(0, 0, 0, 0)
+dragArea.BackgroundColor3 = Color3.fromRGB(25, 25, 55)
+dragArea.BorderSizePixel = 0
+dragArea.Parent = mainFrame
+
+-- عنوان السكربت (مثل الصورة)
+title.Size = UDim2.new(0.7, 0, 0, 45)
+title.Position = UDim2.new(0.05, 0, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "💣 TIMEBOMB V5"
+title.TextColor3 = Color3.fromRGB(255, 200, 50)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = dragArea
+
+-- زر الإغلاق (مثل الصورة)
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -38, 0, 8)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+closeBtn.BorderSizePixel = 0
+closeBtn.Text = "✕"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.TextScaled = true
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = dragArea
+
+-- زر التصغير (مثل الصورة)
+minimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+minimizeBtn.Position = UDim2.new(1, -72, 0, 8)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 90)
+minimizeBtn.BorderSizePixel = 0
+minimizeBtn.Text = "─"
+minimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+minimizeBtn.TextScaled = true
+minimizeBtn.Font = Enum.Font.GothamBold
+minimizeBtn.Parent = dragArea
+
+-- =========================================== --
+-- تحريك القائمة (اسحب من الأعلى)
+-- =========================================== --
+local dragging = false
+local dragStart = nil
+local startPos = nil
+
+dragArea.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+    end
+end)
+
+dragArea.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- =========================================== --
+-- وظائف الإخفاء والتصغير
+-- =========================================== --
+local uiVisible = true
+closeBtn.MouseButton1Click:Connect(function()
+    uiVisible = not uiVisible
+    mainFrame.Visible = uiVisible
+end)
+
+local isMinimized = false
+local savedSize = mainFrame.Size
+
+minimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        mainFrame.Size = UDim2.new(0, 200, 0, 45)
+        minimizeBtn.Text = "□"
+        for _, child in pairs(mainFrame:GetChildren()) do
+            if child ~= dragArea and child ~= title and child ~= closeBtn and child ~= minimizeBtn then
+                child.Visible = false
+            end
+        end
+        title.Text = "💣 TIMEBOMB"
+    else
+        mainFrame.Size = savedSize
+        minimizeBtn.Text = "─"
+        title.Text = "💣 TIMEBOMB V5"
+        for _, child in pairs(mainFrame:GetChildren()) do
+            if child ~= dragArea and child ~= title and child ~= closeBtn and child ~= minimizeBtn then
+                child.Visible = true
+            end
+        end
+    end
+end)
+
+-- اختصار F5
+game:GetService("UserInputService").InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.F5 then
+        uiVisible = not uiVisible
+        mainFrame.Visible = uiVisible
+    end
+end)
+
+-- =========================================== --
+-- دالة إنشاء أزرار التبديل (مثل الصورة)
+-- =========================================== --
+local function createToggle(text, yPos, color, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.92, 0, 0, 34)
+    frame.Position = UDim2.new(0.04, 0, yPos, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 45)
+    frame.BorderSizePixel = 1
+    frame.BorderColor3 = Color3.fromRGB(50, 50, 90)
+    frame.Parent = mainFrame
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.55, 0, 1, 0)
+    label.Position = UDim2.new(0.03, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 65, 0.8, 0)
+    btn.Position = UDim2.new(0.7, 0, 0.1, 0)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+    btn.BorderSizePixel = 2
+    btn.BorderColor3 = color or Color3.fromRGB(255, 170, 50)
+    btn.Text = "OFF"
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = frame
+
+    local state = false
+    btn.MouseButton1Click:Connect(function()
+        state = not state
+        btn.Text = state and "ON" or "OFF"
+        btn.BackgroundColor3 = state and Color3.fromRGB(0, 200, 80) or Color3.fromRGB(50, 50, 80)
+        if callback then callback(state) end
+    end)
+
+    return btn, frame
+end
+
+-- =========================================== --
+-- دالة إنشاء سلايدر (مثل الصورة)
+-- =========================================== --
+local function createSlider(parent, text, yPos, min, max, default, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.92, 0, 0, 34)
+    frame.Position = UDim2.new(0.04, 0, yPos, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 45)
+    frame.BorderSizePixel = 1
+    frame.BorderColor3 = Color3.fromRGB(50, 50, 90)
+    frame.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.Position = UDim2.new(0.03, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text .. " " .. tostring(default) .. "%"
+    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
+    local slider = Instance.new("Frame")
+    slider.Size = UDim2.new(0.35, 0, 0.5, 0)
+    slider.Position = UDim2.new(0.58, 0, 0.25, 0)
+    slider.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
+    slider.BorderSizePixel = 1
+    slider.BorderColor3 = Color3.fromRGB(255, 170, 50)
+    slider.Parent = frame
+
+    local fill = Instance.new("Frame")
+    fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+    fill.BackgroundColor3 = Color3.fromRGB(255, 170, 50)
+    fill.BorderSizePixel = 0
+    fill.Parent = slider
+
+    local value = default
+    local dragging = false
+
+    slider.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+        end
+    end)
+
+    slider.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+
+    slider.MouseMoved:Connect(function()
+        if dragging then
+            local mouse = player:GetMouse()
+            local relX = (mouse.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X
+            local clamped = math.clamp(relX, 0, 1)
+            fill.Size = UDim2.new(clamped, 0, 1, 0)
+            value = math.floor(min + clamped * (max - min))
+            label.Text = text .. " " .. tostring(value) .. "%"
+            if callback then callback(value) end
+        end
+    end)
+
+    return fill, frame
+end
+
+-- =========================================== --
+-- دالة إنشاء دروب داون (مثل الصورة)
+-- =========================================== --
+local function createDropdown(parent, text, yPos, items, callback)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0.92, 0, 0, 34)
+    frame.Position = UDim2.new(0.04, 0, yPos, 0)
+    frame.BackgroundColor3 = Color3.fromRGB(20, 20, 45)
+    frame.BorderSizePixel = 1
+    frame.BorderColor3 = Color3.fromRGB(50, 50, 90)
+    frame.Parent = parent
+
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(0.5, 0, 1, 0)
+    label.Position = UDim2.new(0.03, 0, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Text = text
+    label.TextColor3 = Color3.fromRGB(220, 220, 230)
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextScaled = true
+    label.Font = Enum.Font.Gotham
+    label.Parent = frame
+
+    local dropdown = Instance.new("TextButton")
+    dropdown.Size = UDim2.new(0.35, 0, 0.8, 0)
+    dropdown.Position = UDim2.new(0.58, 0, 0.1, 0)
+    dropdown.BackgroundColor3 = Color3.fromRGB(40, 40, 70)
+    dropdown.BorderSizePixel = 1
+    dropdown.BorderColor3 = Color3.fromRGB(255, 170, 50)
+    dropdown.Text = items[1]
+    dropdown.TextColor3 = Color3.fromRGB(255, 255, 255)
+    dropdown.TextScaled = true
+    dropdown.Font = Enum.Font.Gotham
+    dropdown.Parent = frame
+
+    local selected = 1
+    dropdown.MouseButton1Click:Connect(function()
+        selected = selected % #items + 1
+        dropdown.Text = items[selected]
+        if callback then callback(items[selected]) end
+    end)
+
+    return dropdown, frame
+end
+
+-- =========================================== --
+-- الأزرار والمميزات (مثل الصورة)
+-- =========================================== --
+local y = 0.12
+
+-- القسم: General
+local generalLabel = Instance.new("TextLabel")
+generalLabel.Size = UDim2.new(0.92, 0, 0, 25)
+generalLabel.Position = UDim2.new(0.04, 0, y, 0)
+generalLabel.BackgroundColor3 = Color3.fromRGB(255, 170, 50)
+generalLabel.BackgroundTransparency = 0.2
+generalLabel.Text = " ⚙️ GENERAL"
+generalLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
+generalLabel.TextXAlignment = Enum.TextXAlignment.Left
+generalLabel.TextScaled = true
+generalLabel.Font = Enum.Font.GothamBold
+generalLabel.Parent = mainFrame
+y = y + 0.07
+
+createToggle("🏃 Auto Pass", y, Color3.fromRGB(255, 170, 50), function(state)
+    print("Auto Pass: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("🔄 Auto Spam Parry", y, Color3.fromRGB(255, 150, 50), function(state)
+    print("Auto Spam Parry: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("💤 AFK Mode", y, Color3.fromRGB(200, 200, 50), function(state)
+    print("AFK Mode: " .. tostring(state))
+end)
+y = y + 0.085
+
+createSlider(mainFrame, "🎯 Accuracy", y, 0, 100, 80, function(value)
+    print("Accuracy: " .. tostring(value))
+end)
+y = y + 0.085
+
+createSlider(mainFrame, "⚡ Speed", y, 0, 100, 50, function(value)
+    print("Speed: " .. tostring(value))
+end)
+y = y + 0.085
+
+-- القسم: Combat
+local combatLabel = Instance.new("TextLabel")
+combatLabel.Size = UDim2.new(0.92, 0, 0, 25)
+combatLabel.Position = UDim2.new(0.04, 0, y, 0)
+combatLabel.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+combatLabel.BackgroundTransparency = 0.2
+combatLabel.Text = " ⚔️ COMBAT"
+combatLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+combatLabel.TextXAlignment = Enum.TextXAlignment.Left
+combatLabel.TextScaled = true
+combatLabel.Font = Enum.Font.GothamBold
+combatLabel.Parent = mainFrame
+y = y + 0.07
+
+createToggle("🛡️ Auto Block", y, Color3.fromRGB(50, 200, 100), function(state)
+    print("Auto Block: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("⚔️ Auto Parry", y, Color3.fromRGB(200, 50, 100), function(state)
+    print("Auto Parry: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("🌀 Anti Curve", y, Color3.fromRGB(200, 200, 50), function(state)
+    print("Anti Curve: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("👁️ Infinity Detection", y, Color3.fromRGB(50, 200, 255), function(state)
+    print("Infinity Detection: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("💀 Death Slash Detection", y, Color3.fromRGB(255, 50, 50), function(state)
+    print("Death Slash: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("🎯 Trigger Bot", y, Color3.fromRGB(255, 150, 50), function(state)
+    print("Trigger Bot: " .. tostring(state))
+end)
+y = y + 0.085
+
+createDropdown(mainFrame, "📊 Detection Mode", y, {"Normal", "Advanced", "Expert"}, function(value)
+    print("Detection Mode: " .. value)
+end)
+y = y + 0.085
+
+-- القسم: Visuals
+local visualLabel = Instance.new("TextLabel")
+visualLabel.Size = UDim2.new(0.92, 0, 0, 25)
+visualLabel.Position = UDim2.new(0.04, 0, y, 0)
+visualLabel.BackgroundColor3 = Color3.fromRGB(100, 50, 200)
+visualLabel.BackgroundTransparency = 0.2
+visualLabel.Text = " 👁️ VISUALS"
+visualLabel.TextColor3 = Color3.fromRGB(180, 100, 255)
+visualLabel.TextXAlignment = Enum.TextXAlignment.Left
+visualLabel.TextScaled = true
+visualLabel.Font = Enum.Font.GothamBold
+visualLabel.Parent = mainFrame
+y = y + 0.07
+
+createToggle("🔴 ESP Players", y, Color3.fromRGB(255, 50, 50), function(state)
+    print("ESP Players: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("🟢 ESP Ball", y, Color3.fromRGB(50, 255, 50), function(state)
+    print("ESP Ball: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("📏 Trail", y, Color3.fromRGB(200, 100, 255), function(state)
+    print("Trail: " .. tostring(state))
+end)
+y = y + 0.085
+
+createDropdown(mainFrame, "🎨 Skin", y, {"Default", "Neon", "Galaxy", "Gold", "Obsidian"}, function(value)
+    print("Skin: " .. value)
+end)
+y = y + 0.085
+
+-- القسم: Miscellaneous
+local miscLabel = Instance.new("TextLabel")
+miscLabel.Size = UDim2.new(0.92, 0, 0, 25)
+miscLabel.Position = UDim2.new(0.04, 0, y, 0)
+miscLabel.BackgroundColor3 = Color3.fromRGB(50, 150, 200)
+miscLabel.BackgroundTransparency = 0.2
+miscLabel.Text = " 🔧 MISCELLANEOUS"
+miscLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+miscLabel.TextXAlignment = Enum.TextXAlignment.Left
+miscLabel.TextScaled = true
+miscLabel.Font = Enum.Font.GothamBold
+miscLabel.Parent = mainFrame
+y = y + 0.07
+
+createToggle("🛡️ God Mode", y, Color3.fromRGB(50, 255, 150), function(state)
+    print("God Mode: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("🔒 Anti-Crash", y, Color3.fromRGB(255, 80, 120), function(state)
+    print("Anti-Crash: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("💥 Explosion", y, Color3.fromRGB(255, 150, 50), function(state)
+    print("Explosion: " .. tostring(state))
+end)
+y = y + 0.085
+
+createToggle("🔄 Auto Win", y, Color3.fromRGB(80, 200, 80), function(state)
+    print("Auto Win: " .. tostring(state))
+end)
+y = y + 0.085
+
+-- =========================================== --
+-- زر إيقاف الكل (Stop All)
+-- =========================================== --
+local stopBtn = Instance.new("TextButton")
+stopBtn.Size = UDim2.new(0.3, 0, 0, 32)
+stopBtn.Position = UDim2.new(0.35, 0, 0.96, 0)
+stopBtn.BackgroundColor3 = Color3.fromRGB(200, 30, 30)
+stopBtn.BorderSizePixel = 2
+stopBtn.BorderColor3 = Color3.fromRGB(255, 80, 80)
+stopBtn.Text = "🛑 STOP ALL"
+stopBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+stopBtn.TextScaled = true
+stopBtn.Font = Enum.Font.GothamBold
+stopBtn.Parent = mainFrame
+
+stopBtn.MouseButton1Click:Connect(function()
+    for _, child in pairs(mainFrame:GetChildren()) do
+        if child:IsA("Frame") and child:FindFirstChild("TextButton") then
+            local btn = child:FindFirstChild("TextButton")
+            if btn and btn.Text == "ON" then
+                btn.Text = "OFF"
+                btn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+            end
+        end
+    end
+    local char = player.Character
+    if char then
+        local humanoid = char:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 16
+            humanoid.MaxHealth = 100
+            humanoid.Health = 100
+        end
+    end
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = "3nF Hub",
+        Text = "🛑 All features stopped!",
+        Duration = 2
+    })
+end)
+
+-- =========================================== --
+-- اسم الصانع والتليجرام
+-- =========================================== --
+credit.Size = UDim2.new(1, 0, 0, 16)
+credit.Position = UDim2.new(0, 0, 1.02, 0)
+credit.BackgroundTransparency = 1
+credit.Text = "⭐ Script by 3nF ⭐"
+credit.TextColor3 = Color3.fromRGB(255, 170, 50)
+credit.TextScaled = true
+credit.Font = Enum.Font.Gotham
+credit.Parent = mainFrame
+
+telegram.Size = UDim2.new(1, 0, 0, 16)
+telegram.Position = UDim2.new(0, 0, 1.06, 0)
+telegram.BackgroundTransparency = 1
+telegram.Text = "📱 Telegram: xxx9ooo"
+telegram.TextColor3 = Color3.fromRGB(120, 200, 255)
+telegram.TextScaled = true
+telegram.Font = Enum.Font.Gotham
+telegram.Parent = mainFrame
+
+-- =========================================== --
+-- تحديث حجم الـ Scrolling (لو في عناصر زيادة)
+-- =========================================== --
+mainFrame.CanvasSize = UDim2.new(0, 0, 0, y * 380 + 100)
+
+-- =========================================== --
+-- إشعار التشغيل
+-- =========================================== --
+print("✅ TimeBomb V5 Loaded! | Script by 3nF")
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "💣 3nF TimeBomb",
+    Text = "TimeBomb V5 Loaded! | F5 to hide | Drag to move",
+    Duration = 4
+})

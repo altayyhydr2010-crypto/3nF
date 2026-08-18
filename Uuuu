@@ -1,0 +1,175 @@
+-- Blade Ball Auto Parry + Spam + Delta Map
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+
+local AutoParry = false
+local AutoSpam = false
+local DeltaMap = false
+local Platform = nil
+
+-- Try Parry
+local function TryParry()
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    -- Fire all remotes
+    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+        if v:IsA("RemoteEvent") then
+            pcall(function()
+                v:FireServer()
+            end)
+        end
+    end
+    
+    -- Simulate tap
+    pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
+        wait(0.01)
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
+    end)
+end
+
+-- Auto Parry
+RunService.RenderStepped:Connect(function()
+    if not AutoParry then return end
+    
+    local char = LocalPlayer.Character
+    if not char then return end
+    
+    local root = char:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    
+    for _, v in pairs(workspace:GetDescendants()) do
+        if v:IsA("Part") and v ~= root and not v.Anchored then
+            local dist = (v.Position - root.Position).Magnitude
+            if dist <= 40 then
+                TryParry()
+                break
+            end
+        end
+    end
+end)
+
+-- Auto Spam
+spawn(function()
+    while true do
+        if AutoSpam then
+            TryParry()
+        end
+        wait(0.05)
+    end
+end)
+
+-- Delta Map
+local function CreatePlatform()
+    if Platform then
+        Platform:Destroy()
+    end
+    
+    Platform = Instance.new("Part")
+    Platform.Size = Vector3.new(30, 1, 30)
+    Platform.Anchored = true
+    Platform.CanCollide = true
+    Platform.Transparency = 0.3
+    Platform.Color = Color3.fromRGB(0, 255, 255)
+    Platform.Material = Enum.Material.Neon
+    Platform.Parent = workspace
+end
+
+RunService.RenderStepped:Connect(function()
+    if not DeltaMap or not Platform then return end
+    
+    local char = LocalPlayer.Character
+    if char then
+        local root = char:FindFirstChild("HumanoidRootPart")
+        if root then
+            Platform.CFrame = CFrame.new(root.Position + Vector3.new(0, 15, 0))
+        end
+    end
+end)
+
+-- GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "BladeBallGUI"
+gui.ResetOnSpawn = false
+gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+local mainBtn = Instance.new("TextButton")
+mainBtn.Size = UDim2.new(0, 60, 0, 60)
+mainBtn.Position = UDim2.new(0.85, 0, 0.75, 0)
+mainBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+mainBtn.Text = "⚡"
+mainBtn.TextSize = 30
+mainBtn.Font = Enum.Font.GothamBold
+mainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+mainBtn.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 30)
+corner.Parent = mainBtn
+
+local menu = Instance.new("Frame")
+menu.Size = UDim2.new(0, 280, 0, 250)
+menu.Position = UDim2.new(0.5, -140, 0.5, -125)
+menu.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+menu.Visible = false
+menu.Parent = gui
+
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 15)
+menuCorner.Parent = menu
+
+local function CreateButton(text, y, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0.85, 0, 0, 45)
+    btn.Position = UDim2.new(0.075, 0, 0, y)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    btn.Text = text
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 15
+    btn.Font = Enum.Font.GothamBold
+    btn.Parent = menu
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 10)
+    btnCorner.Parent = btn
+    
+    local enabled = false
+    btn.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        if enabled then
+            btn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+        end
+        callback(enabled)
+    end)
+end
+
+CreateButton("🛡️ Auto Parry", 45, function(on)
+    AutoParry = on
+end)
+
+CreateButton("⚡ Auto Spam", 100, function(on)
+    AutoSpam = on
+end)
+
+CreateButton("🗺️ Delta Map", 155, function(on)
+    DeltaMap = on
+    if on then
+        CreatePlatform()
+    elseif Platform then
+        Platform:Destroy()
+        Platform = nil
+    end
+end)
+
+mainBtn.MouseButton1Click:Connect(function()
+    menu.Visible = true
+    mainBtn.Visible = false
+end)
+
+print("✅ Script Loaded!")

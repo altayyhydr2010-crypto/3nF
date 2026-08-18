@@ -1,0 +1,525 @@
+--[[
+    Delta Map + Auto Parry + Auto Spam Script for Blade Ball (MOBILE)
+    Made for Mobile Devices
+]]
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+local GuiService = game:GetService("GuiService")
+
+-- Variables
+local Settings = {
+    -- Delta Map
+    DeltaMapEnabled = false,
+    DeltaMapMode = "Normal", -- Normal, Follow, Orbit
+    DeltaMapSpeed = 30,
+    DeltaMapDistance = 50,
+    DeltaMapHeight = 20,
+    DeltaMapRotationSpeed = 5,
+    DeltaMapTransparency = 0.5,
+    DeltaMapColor = Color3.fromRGB(0, 255, 255),
+    
+    -- Auto Parry
+    AutoParryEnabled = false,
+    AutoParryRange = 50,
+    
+    -- Auto Spam
+    AutoSpamEnabled = false,
+    AutoSpamSpeed = 0.1,
+    
+    -- Connections
+    Platform = nil,
+    PlatformConnection = nil,
+    ParryConnection = nil,
+    SpamConnection = nil
+}
+
+-- Find Ball
+local function FindBall()
+    for _, v in pairs(Workspace:GetDescendants()) do
+        if v:IsA("Part") or v:IsA("MeshPart") then
+            local name = v.Name:lower()
+            if name:find("ball") or name:find("blade") or name:find("sphere") then
+                if v:FindFirstChild("Velocity") or v:FindFirstChild("LinearVelocity") or v:FindFirstChild("AssemblyLinearVelocity") then
+                    return v
+                end
+            end
+        end
+    end
+    return nil
+end
+
+-- Get Character
+local function GetCharacter()
+    return LocalPlayer.Character
+end
+
+-- Get RootPart
+local function GetRootPart()
+    local Character = GetCharacter()
+    return Character and Character:FindFirstChild("HumanoidRootPart")
+end
+
+-- Try Parry
+local function TryParry()
+    local Character = GetCharacter()
+    if not Character then return end
+    
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    if not Humanoid or Humanoid.Health <= 0 then return end
+    
+    -- Try to find parry remote
+    local ParryRemote = nil
+    
+    for _, v in pairs(ReplicatedStorage:GetDescendants()) do
+        if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+            local name = v.Name:lower()
+            if name:find("parry") or name:find("block") or name:find("deflect") or name:find("counter") or name:find("hit") or name:find("swing") or name:find("attack") then
+                ParryRemote = v
+                break
+            end
+        end
+    end
+    
+    if ParryRemote then
+        pcall(function()
+            ParryRemote:FireServer()
+        end)
+        pcall(function()
+            ParryRemote:FireServer(Character)
+        end)
+        pcall(function()
+            ParryRemote:InvokeServer()
+        end)
+    else
+        -- Try mobile button tap
+        pcall(function()
+            -- Simulate tap on screen center
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
+            wait(0.01)
+            VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
+        end)
+    end
+end
+
+-- Spam Parry
+local function SpamParry()
+    if not Settings.AutoSpamEnabled then return end
+    
+    TryParry()
+    
+    -- Simulate multiple taps
+    for i = 1, 3 do
+        if Settings.AutoSpamEnabled then
+            pcall(function()
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, nil, 0)
+                wait(0.01)
+                VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, nil, 0)
+            end)
+        end
+    end
+end
+
+-- Create Platform
+local function CreatePlatform()
+    if Settings.Platform then
+        Settings.Platform:Destroy()
+        Settings.Platform = nil
+    end
+    
+    local Platform = Instance.new("Part")
+    Platform.Name = "DeltaPlatform"
+    Platform.Size = Vector3.new(30, 1, 30)
+    Platform.Anchored = true
+    Platform.CanCollide = true
+    Platform.Transparency = Settings.DeltaMapTransparency
+    Platform.Color = Settings.DeltaMapColor
+    Platform.Material = Enum.Material.Neon
+    Platform.Parent = Workspace
+    
+    -- Glow
+    local Highlight = Instance.new("Highlight")
+    Highlight.Parent = Platform
+    Highlight.FillColor = Settings.DeltaMapColor
+    Highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+    Highlight.FillTransparency = 0.7
+    Highlight.OutlineTransparency = 0
+    
+    Settings.Platform = Platform
+    
+    -- Movement
+    if Settings.PlatformConnection then
+        Settings.PlatformConnection:Disconnect()
+    end
+    
+    Settings.PlatformConnection = RunService.RenderStepped:Connect(function()
+        if not Settings.DeltaMapEnabled or not Settings.Platform then return end
+        
+        local RootPart = GetRootPart()
+        if not RootPart then return end
+        
+        local TargetPosition
+        
+        if Settings.DeltaMapMode == "Normal" then
+            TargetPosition = RootPart.Position + Vector3.new(0, Settings.DeltaMapHeight, 0)
+        elseif Settings.DeltaMapMode == "Follow" then
+            TargetPosition = RootPart.Position + RootPart.CFrame.LookVector * Settings.DeltaMapDistance + Vector3.new(0, Settings.DeltaMapHeight, 0)
+        elseif Settings.DeltaMapMode == "Orbit" then
+            local Angle = tick() * Settings.DeltaMapRotationSpeed
+            local X = math.cos(Angle) * Settings.DeltaMapDistance
+            local Z = math.sin(Angle) * Settings.DeltaMapDistance
+            TargetPosition = RootPart.Position + Vector3.new(X, Settings.DeltaMapHeight, Z)
+        end
+        
+        if TargetPosition then
+            local TargetCFrame = CFrame.new(TargetPosition)
+            local Speed = Settings.DeltaMapSpeed * 10
+            Settings.Platform.CFrame = Settings.Platform.CFrame:Lerp(TargetCFrame, math.min(1, Speed / 100))
+        end
+    end)
+end
+
+-- Start Auto Parry
+local function StartAutoParry()
+    if Settings.ParryConnection then
+        Settings.ParryConnection:Disconnect()
+    end
+    
+    Settings.ParryConnection = RunService.RenderStepped:Connect(function()
+        if not Settings.AutoParryEnabled then return end
+        
+        local RootPart = GetRootPart()
+        if not RootPart then return end
+        
+        local Ball = FindBall()
+        if not Ball then return end
+        
+        local Distance = (Ball.Position - RootPart.Position).Magnitude
+        
+        if Distance <= Settings.AutoParryRange then
+            local BallVelocity = nil
+            
+            if Ball:FindFirstChild("Velocity") then
+                BallVelocity = Ball.Velocity.Vector
+            elseif Ball:FindFirstChild("LinearVelocity") then
+                BallVelocity = Ball.LinearVelocity.VectorVelocity
+            elseif Ball:FindFirstChild("AssemblyLinearVelocity") then
+                BallVelocity = Ball.AssemblyLinearVelocity
+            end
+            
+            if BallVelocity and BallVelocity.Magnitude > 5 then
+                local DirectionToPlayer = (RootPart.Position - Ball.Position).Unit
+                local BallDirection = BallVelocity.Unit
+                local DotProduct = DirectionToPlayer:Dot(BallDirection)
+                
+                if DotProduct > 0.3 then
+                    TryParry()
+                end
+            elseif Distance <= Settings.AutoParryRange / 2 then
+                TryParry()
+            end
+        end
+    end)
+end
+
+-- Start Auto Spam
+local function StartAutoSpam()
+    if Settings.SpamConnection then
+        Settings.SpamConnection:Disconnect()
+    end
+    
+    Settings.SpamConnection = RunService.RenderStepped:Connect(function()
+        if not Settings.AutoSpamEnabled then return end
+        
+        SpamParry()
+        wait(Settings.AutoSpamSpeed)
+    end)
+end
+
+-- Create Mobile GUI
+local function CreateMobileGUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "MobileGUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    
+    -- Main Toggle Button
+    local MainButton = Instance.new("TextButton")
+    MainButton.Name = "MainButton"
+    MainButton.Size = UDim2.new(0, 60, 0, 60)
+    MainButton.Position = UDim2.new(0.85, 0, 0.8, 0)
+    MainButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    MainButton.BorderSizePixel = 0
+    MainButton.Text = "⚡"
+    MainButton.TextSize = 30
+    MainButton.Font = Enum.Font.GothamBold
+    MainButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    MainButton.Parent = ScreenGui
+    
+    -- Rounded corners
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 30)
+    UICorner.Parent = MainButton
+    
+    -- Menu Frame
+    local MenuFrame = Instance.new("Frame")
+    MenuFrame.Name = "MenuFrame"
+    MenuFrame.Size = UDim2.new(0, 300, 0, 500)
+    MenuFrame.Position = UDim2.new(0.5, -150, 0.5, -250)
+    MenuFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    MenuFrame.BorderSizePixel = 0
+    MenuFrame.Visible = false
+    MenuFrame.Parent = ScreenGui
+    
+    local MenuCorner = Instance.new("UICorner")
+    MenuCorner.CornerRadius = UDim.new(0, 15)
+    MenuCorner.Parent = MenuFrame
+    
+    -- Title
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 0, 50)
+    Title.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    Title.BorderSizePixel = 0
+    Title.Text = "Blade Ball - Mobile"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 18
+    Title.Font = Enum.Font.GothamBold
+    Title.Parent = MenuFrame
+    
+    local TitleCorner = Instance.new("UICorner")
+    TitleCorner.CornerRadius = UDim.new(0, 15)
+    TitleCorner.Parent = Title
+    
+    -- Close Button
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Size = UDim2.new(0, 40, 0, 40)
+    CloseButton.Position = UDim2.new(1, -45, 0, 5)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+    CloseButton.BorderSizePixel = 0
+    CloseButton.Text = "X"
+    CloseButton.TextSize = 20
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseButton.Parent = MenuFrame
+    
+    local CloseCorner = Instance.new("UICorner")
+    CloseCorner.CornerRadius = UDim.new(0, 20)
+    CloseCorner.Parent = CloseButton
+    
+    CloseButton.MouseButton1Click:Connect(function()
+        MenuFrame.Visible = false
+        MainButton.Visible = true
+    end)
+    
+    -- Scroll Frame for buttons
+    local ScrollFrame = Instance.new("ScrollingFrame")
+    ScrollFrame.Size = UDim2.new(1, 0, 1, -60)
+    ScrollFrame.Position = UDim2.new(0, 0, 0, 55)
+    ScrollFrame.BackgroundTransparency = 1
+    ScrollFrame.BorderSizePixel = 0
+    ScrollFrame.ScrollBarThickness = 5
+    ScrollFrame.Parent = MenuFrame
+    
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.Padding = UDim.new(0, 10)
+    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    UIListLayout.Parent = ScrollFrame
+    
+    -- Function to create toggle button
+    local function CreateToggleButton(Name, YPosition, ToggleFunction)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(0.9, 0, 0, 50)
+        Button.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+        Button.BorderSizePixel = 0
+        Button.Text = Name
+        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Button.TextSize = 16
+        Button.Font = Enum.Font.GothamBold
+        Button.Parent = ScrollFrame
+        
+        local Corner = Instance.new("UICorner")
+        Corner.CornerRadius = UDim.new(0, 10)
+        Corner.Parent = Button
+        
+        local isEnabled = false
+        
+        Button.MouseButton1Click:Connect(function()
+            isEnabled = not isEnabled
+            if isEnabled then
+                Button.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+            else
+                Button.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+            end
+            ToggleFunction(isEnabled, Button)
+        end)
+        
+        return Button
+    end
+    
+    -- Delta Map Toggle
+    CreateToggleButton("Delta Map", 0, function(enabled, btn)
+        Settings.DeltaMapEnabled = enabled
+        if enabled then
+            CreatePlatform()
+        else
+            if Settings.Platform then
+                Settings.Platform:Destroy()
+                Settings.Platform = nil
+            end
+        end
+    end)
+    
+    -- Auto Parry Toggle
+    CreateToggleButton("Auto Parry", 0, function(enabled, btn)
+        Settings.AutoParryEnabled = enabled
+        if enabled then
+            StartAutoParry()
+        else
+            if Settings.ParryConnection then
+                Settings.ParryConnection:Disconnect()
+            end
+        end
+    end)
+    
+    -- Auto Spam Toggle
+    CreateToggleButton("Auto Spam", 0, function(enabled, btn)
+        Settings.AutoSpamEnabled = enabled
+        if enabled then
+            StartAutoSpam()
+        else
+            if Settings.SpamConnection then
+                Settings.SpamConnection:Disconnect()
+            end
+        end
+    end)
+    
+    -- Enable All Button
+    local EnableAll = Instance.new("TextButton")
+    EnableAll.Size = UDim2.new(0.9, 0, 0, 60)
+    EnableAll.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+    EnableAll.BorderSizePixel = 0
+    EnableAll.Text = "تفعيل الكل"
+    EnableAll.TextColor3 = Color3.fromRGB(255, 255, 255)
+    EnableAll.TextSize = 18
+    EnableAll.Font = Enum.Font.GothamBold
+    EnableAll.Parent = ScrollFrame
+    
+    local EnableCorner = Instance.new("UICorner")
+    EnableCorner.CornerRadius = UDim.new(0, 10)
+    EnableCorner.Parent = EnableAll
+    
+    EnableAll.MouseButton1Click:Connect(function()
+        Settings.DeltaMapEnabled = true
+        Settings.AutoParryEnabled = true
+        Settings.AutoSpamEnabled = true
+        CreatePlatform()
+        StartAutoParry()
+        StartAutoSpam()
+    end)
+    
+    -- Disable All Button
+    local DisableAll = Instance.new("TextButton")
+    DisableAll.Size = UDim2.new(0.9, 0, 0, 60)
+    DisableAll.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+    DisableAll.BorderSizePixel = 0
+    DisableAll.Text = "إيقاف الكل"
+    DisableAll.TextColor3 = Color3.fromRGB(255, 255, 255)
+    DisableAll.TextSize = 18
+    DisableAll.Font = Enum.Font.GothamBold
+    DisableAll.Parent = ScrollFrame
+    
+    local DisableCorner = Instance.new("UICorner")
+    DisableCorner.CornerRadius = UDim.new(0, 10)
+    DisableCorner.Parent = DisableAll
+    
+    DisableAll.MouseButton1Click:Connect(function()
+        Settings.DeltaMapEnabled = false
+        Settings.AutoParryEnabled = false
+        Settings.AutoSpamEnabled = false
+        
+        if Settings.Platform then
+            Settings.Platform:Destroy()
+            Settings.Platform = nil
+        end
+        if Settings.ParryConnection then
+            Settings.ParryConnection:Disconnect()
+        end
+        if Settings.SpamConnection then
+            Settings.SpamConnection:Disconnect()
+        end
+    end)
+    
+    -- Main button click
+    MainButton.MouseButton1Click:Connect(function()
+        MenuFrame.Visible = true
+        MainButton.Visible = false
+    end)
+end
+
+-- Handle Character Added
+Players.LocalPlayer.CharacterAdded:Connect(function(character)
+    if Settings.DeltaMapEnabled then
+        wait(1)
+        CreatePlatform()
+    end
+end)
+
+-- Handle Script Destroy
+script.Destroying:Connect(function()
+    if Settings.Platform then
+        Settings.Platform:Destroy()
+    end
+    if Settings.PlatformConnection then
+        Settings.PlatformConnection:Disconnect()
+    end
+    if Settings.ParryConnection then
+        Settings.ParryConnection:Disconnect()
+    end
+    if Settings.SpamConnection then
+        Settings.SpamConnection:Disconnect()
+    end
+end)
+
+-- Create GUI
+CreateMobileGUI()
+
+-- Notification
+local function Notify(text)
+    local NotificationGui = Instance.new("ScreenGui")
+    NotificationGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    
+    local Frame = Instance.new("Frame")
+    Frame.Size = UDim2.new(0, 250, 0, 60)
+    Frame.Position = UDim2.new(0.5, -125, 0.1, 0)
+    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    Frame.BorderSizePixel = 0
+    Frame.Parent = NotificationGui
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 10)
+    Corner.Parent = Frame
+    
+    local TextLabel = Instance.new("TextLabel")
+    TextLabel.Size = UDim2.new(1, 0, 1, 0)
+    TextLabel.BackgroundTransparency = 1
+    TextLabel.Text = text
+    TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    TextLabel.TextSize = 14
+    TextLabel.Font = Enum.Font.GothamBold
+    TextLabel.Parent = Frame
+    
+    wait(3)
+    NotificationGui:Destroy()
+end
+
+Notify("✅ تم تحميل السكربت!\nاضغط على الزر الأزرق ⚡")

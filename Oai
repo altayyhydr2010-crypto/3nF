@@ -1,0 +1,49 @@
+-- Blade Ball Auto Parry & Auto Spam Script
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local Balls = workspace:WaitForChild("Balls")
+
+local function getBall()
+    for _, ball in pairs(Balls:GetChildren()) do
+        if ball:IsA("BasePart") then
+            return ball
+        end
+    end
+    return nil
+end
+
+local function triggerParry()
+    VirtualInputManager:SendKeyPressEvent(Enum.KeyCode.F, true)
+    task.wait(0.01)
+    VirtualInputManager:SendKeyPressEvent(Enum.KeyCode.F, false)
+end
+
+RunService.RenderStepped:Connect(function()
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return end
+    
+    local hrp = character.HumanoidRootPart
+    local ball = getBall()
+    
+    if ball then
+        local distance = (ball.Position - hrp.Position).Magnitude
+        local velocity = ball.AssemblyLinearVelocity.Magnitude
+        local targetPlayer = ball:GetAttribute("Target") or ""
+        
+        -- وضع السبام التلقائي (إذا كانت الكورة قريبة جداً وموجهة لك)
+        if targetPlayer == LocalPlayer.Name and distance <= 12 then
+            -- ضغط سريع ومستمر بدون تأخير (Spam Mode)
+            triggerParry()
+        else
+            -- وضع الصد العادي بناءً على سرعة الكورة
+            local parryDistance = math.clamp(velocity * 0.35, 12, 60)
+            if (targetPlayer == LocalPlayer.Name or distance < 15) and distance <= parryDistance then
+                triggerParry()
+            end
+        end
+    end
+end)

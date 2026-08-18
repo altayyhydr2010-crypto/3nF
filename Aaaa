@@ -1,0 +1,20 @@
+print("=== Diagnostic ===")
+
+-- 1. Find all remotes
+for _, v in pairs(game:GetService("ReplicatedStorage"):GetDescendants()) do
+    if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+        print("Remote:", v.Name)
+    end
+end
+
+-- 2. Find ball
+for _, v in pairs(workspace:GetDescendants()) do
+    if v:IsA("Part") then
+        local name = v.Name:lower()
+        if name:find("ball") or name:find("blade") then
+            print("Ball:", v.Name, "| Parent:", v.Parent.Name)
+        end
+    end
+end
+
+print("=== End ===")
